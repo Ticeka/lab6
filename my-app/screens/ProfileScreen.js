@@ -1,45 +1,57 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as Permissions from 'expo-permissions';
 
-const ProfileScreen = ({ navigation }) => {
-  const [userEmail, setUserEmail] = useState('');
+const ProfileScreen = () => {
+  const [profileImage, setProfileImage] = useState(null);
 
-  // ลองดึงข้อมูลผู้ใช้จาก AsyncStorage (หรือที่เก็บข้อมูลอื่นๆ)
-  const loadUserProfile = async () => {
-    try {
-      const email = await AsyncStorage.getItem('userEmail');
-      if (email) {
-        setUserEmail(email);
-      } else {
-        setUserEmail('ไม่มีข้อมูล');
-      }
-    } catch (error) {
-      console.error('Error loading user profile:', error);
+  // ฟังก์ชันในการขออนุญาต
+  const requestPermission = async () => {
+    if (Platform.OS === 'android') {
+      const { status } = await Permissions.askAsync(Permissions.MEDIA_LIBRARY);
+      return status === 'granted';
     }
+    return true; // iOS ไม่จำเป็นต้องขออนุญาตเพิ่ม
   };
 
-  const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem('userEmail');
-      Alert.alert('สำเร็จ', 'คุณได้ออกจากระบบแล้ว');
-      navigation.navigate('Login'); // นำทางไปที่หน้า Login
-    } catch (error) {
-      console.error('Error logging out:', error);
+  const handleChoosePhoto = async () => {
+    const hasPermission = await requestPermission();
+    if (!hasPermission) {
+      Alert.alert('Permission denied', 'Cannot access photo library');
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.cancelled) {
+      setProfileImage(result.uri);
     }
   };
-
-  useEffect(() => {
-    loadUserProfile();
-  }, []);
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Profile</Text>
-      <Text style={styles.info}>อีเมล: {userEmail}</Text>
+      <View style={styles.imageContainer}>
+        {profileImage ? (
+          <Image source={{ uri: profileImage }} style={styles.image} />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Text>No profile picture</Text>
+          </View>
+        )}
+      </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleLogout}>
-        <Text style={styles.buttonText}>ออกจากระบบ</Text>
+      <TouchableOpacity style={styles.photoButton} onPress={handleChoosePhoto}>
+        <Text style={styles.buttonText}>Choose Photo</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.logoutButton} onPress={() => console.log('Log out')}>
+        <Text style={styles.buttonText}>Log Out</Text>
       </TouchableOpacity>
     </View>
   );
@@ -58,16 +70,36 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  info: {
-    fontSize: 18,
+  imageContainer: {
+    alignItems: 'center',
     marginBottom: 20,
-    textAlign: 'center',
   },
-  button: {
+  image: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+  },
+  imagePlaceholder: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#ddd',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoButton: {
+    backgroundColor: '#3498db',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logoutButton: {
     backgroundColor: '#FF5733',
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
+    marginTop: 10,
   },
   buttonText: {
     color: '#fff',

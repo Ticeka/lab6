@@ -14,8 +14,8 @@ const ProductCard = ({ id, name, price, description, imageUri }) => {
       {imageUrl ? (
         <Image
           style={styles.logo}
-          source={{ uri: imageUrl }}
-          resizeMode="contain"
+          source={{ uri: imageUrl }}  // ใช้ URI ที่ได้รับมา
+          resizeMode="contain"  // ใช้ 'contain' เพื่อให้รูปแสดงครบถ้วนในกรอบ
         />
       ) : (
         <View style={styles.logoPlaceholder} />

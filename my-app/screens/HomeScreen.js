@@ -11,6 +11,8 @@ import {
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getFirestore, collection, getDocs } from 'firebase/firestore'; // Firestore imports
+import { db } from '../FireStore'; // Import the Firestore instance
 import ProductCard from '../Components/ProductCard';
 
 const HomeScreen = ({ navigation }) => {
@@ -21,14 +23,16 @@ const HomeScreen = ({ navigation }) => {
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState('ALL');
 
-  const fetchProductData = async (page) => {
+  const fetchProductData = async () => {
     try {
-      const response = await fetch(`http://it2.sut.ac.th/labexample/product.php?pageno=${page}`);
-      const data = await response.json();
-      if (data.products && Array.isArray(data.products)) {
-        return data.products;
-      }
-      return [];
+      // Get reference to Firestore collection
+      const productRef = collection(db, 'products');
+      const productSnapshot = await getDocs(productRef); // Fetch all documents
+      const productList = productSnapshot.docs.map(doc => ({
+        id: doc.id, 
+        ...doc.data(), // Get product data from Firestore
+      }));
+      return productList;
     } catch (error) {
       setError(error);
       return [];
@@ -51,10 +55,7 @@ const HomeScreen = ({ navigation }) => {
     const loadAllData = async () => {
       setLoading(true);
       setError(null);
-      const page1Data = await fetchProductData(1);
-      const page2Data = await fetchProductData(2);
-      const page3Data = await fetchProductData(3);
-      const allData = [...page1Data, ...page2Data, ...page3Data];
+      const allData = await fetchProductData();
       setAllProductData(allData);
       setFilteredProductData(allData);
       await loadSelectedProducts();
@@ -144,7 +145,7 @@ const HomeScreen = ({ navigation }) => {
                     name={item.name}
                     description={`ประเภท: ${item.cate || 'ไม่มี'} | คงเหลือ: ${item.stock || '0'}`}
                     price={item.price}
-                    imageUri={item.pic}
+                    imageUri={item.pic}  // ใช้ `pic` เป็น URL รูปภาพจาก Firestore
                   />
                 </TouchableOpacity>
               ))

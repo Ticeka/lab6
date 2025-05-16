@@ -1,33 +1,57 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../FireStore'; // ดึง auth จาก firebase config
 
 const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleRegister = () => {
-    if (email && password && confirmPassword) {
-      if (password === confirmPassword) {
-        Alert.alert('สำเร็จ', 'ลงทะเบียนสำเร็จ');
-        navigation.navigate('Login'); // นำทางไปที่หน้า Login หลังจากลงทะเบียน
-      } else {
-        Alert.alert('ข้อผิดพลาด', 'รหัสผ่านไม่ตรงกัน');
-      }
-    } else {
+  const handleRegister = async () => {
+    if (!email || !password || !confirmPassword) {
       Alert.alert('ข้อผิดพลาด', 'กรุณากรอกข้อมูลให้ครบถ้วน');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('ข้อผิดพลาด', 'รหัสผ่านไม่ตรงกัน');
+      return;
+    }
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      Alert.alert('สำเร็จ', 'ลงทะเบียนสำเร็จ');
+      navigation.navigate('Login');
+    } catch (error) {
+      console.log(error);
+      Alert.alert('ข้อผิดพลาด', mapAuthError(error.code));
+    }
+  };
+
+  const mapAuthError = (code) => {
+    switch (code) {
+      case 'auth/email-already-in-use':
+        return 'อีเมลนี้ถูกใช้งานแล้ว';
+      case 'auth/invalid-email':
+        return 'อีเมลไม่ถูกต้อง';
+      case 'auth/weak-password':
+        return 'รหัสผ่านควรมีอย่างน้อย 6 ตัวอักษร';
+      default:
+        return 'เกิดข้อผิดพลาด กรุณาลองใหม่';
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Register</Text>
+      <Text style={styles.header}>ลงทะเบียน</Text>
       <TextInput
         style={styles.input}
         placeholder="อีเมล"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
+        autoCapitalize="none"
       />
       <TextInput
         style={styles.input}

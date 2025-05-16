@@ -20,16 +20,17 @@ const CartScreen = () => {
   const handleClearSelection = async () => {
     try {
       await AsyncStorage.removeItem('selectedProductNames');
-      setSelectedProductNames([]);
+      setSelectedProductNames([]);  // Clear the state after removing from AsyncStorage
       Alert.alert('สำเร็จ', 'ล้างรายการสินค้าที่เลือกแล้ว');
+      loadSelectedProducts();  // Reload the list of selected products
     } catch (error) {
       console.error('Error clearing product list:', error);
     }
   };
 
   useEffect(() => {
-    loadSelectedProducts();
-  }, []);
+    loadSelectedProducts();  // Load products when the screen is first loaded
+  }, []);  // Empty dependency array ensures it runs once when component is mounted.
 
   return (
     <SafeAreaView style={styles.safeArea}>
